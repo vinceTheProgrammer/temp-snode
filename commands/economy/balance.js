@@ -5,12 +5,26 @@ const { User } =  require('../../db/models');
 module.exports = {
     data: new SlashCommandBuilder()
     .setName('balance')
-    .setDescription('Gets your current snode coin balance.'),
+    .setDescription('Gets the snode coin balance of target user or your own balance if run without arguments.')
+    .addUserOption(option => {
+        return option
+        .setName('user')
+        .setDescription("The user to check the balance of.")
+        .setRequired(false);
+    }),
 
     async execute(interaction) {
-        const balance = await getSnodeCoinBalance(interaction.user);
+        const target = interaction.options.getUser('user');
 
-        await interaction.reply(`Your current snode coin balance is **${balance}**`);
+        let balance = 0;
+        if (target == null) balance = await getSnodeCoinBalance(interaction.user);
+        else balance = await getSnodeCoinBalance(target);
+
+        let reply = `error`;
+        if (target == null) reply = `Your current snode coin balance is **${balance}**`;
+        else reply = `The balance of **${target.username}** is **${balance}**`;
+
+        await interaction.reply(reply);
     }
 }
 

@@ -10,12 +10,5 @@ module.exports = {
   "dialect": "sqlite",
   "storage": path.resolve(__dirname, '..', '..', 'data', 'database.sqlite'),
   "logging": false
-},
-"production": {
-    "username": "root",
-    "password": null,
-    "database": "database_production",
-    "host": "127.0.0.1",
-    "dialect": "mysql"
 }
 };

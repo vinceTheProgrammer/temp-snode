@@ -12,7 +12,7 @@ const { User } =  require('./db/models');
 let miscData = require('./data/misc.json');
 
 const myIntents = new IntentsBitField();
-myIntents.add(IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.MessageContent, IntentsBitField.Flags.Guilds);
+myIntents.add(IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.MessageContent, IntentsBitField.Flags.Guilds, IntentsBitField.Flags.GuildMembers);
 
 const client = new Client({ intents: myIntents });
 
@@ -28,13 +28,15 @@ client.once(Events.ClientReady, readyClient => {
     const guild = client.guilds.cache.get(GUILD_ID);
     const role = guild.roles.cache.get(CHAT_REVIVE_ROLE_ID);
 
-    if (role && canPingChatRevive()) {
-        role.setMentionable(true)
-            .then(() => {
-                console.log('Role is now mentionable');
-                guild.channels.cache.get(CHAT_REVIVE_NOTIFICATION_CHANNEL_ID).send("I just came online, and it looks like the chat revive cooldown has been exceeded. Next chat revive is ready to be used.");
-            })
-            .catch(console.error);
+    if (process.env.DEVELOP != '1') {
+        if (role && canPingChatRevive()) {
+            role.setMentionable(true)
+                .then(() => {
+                    console.log('Role is now mentionable');
+                    guild.channels.cache.get(CHAT_REVIVE_NOTIFICATION_CHANNEL_ID).send("I just came online, and it looks like the chat revive cooldown has been exceeded. Next chat revive is ready to be used.");
+                })
+                .catch(console.error);
+        }
     }
 });
 
@@ -45,28 +47,30 @@ client.on(Events.MessageCreate, message => {
         tryCreditUser(message);
     }
 
-    if (mentionedRole) {
-        const guild = client.guilds.cache.get(GUILD_ID);
-        const role = guild.roles.cache.get(CHAT_REVIVE_ROLE_ID);
-        if (role && role.mentionable) {
-            role.setMentionable(false)
-                .then(() => {
-                    console.log('Role is no longer mentionable');
-                    guild.channels.cache.get(CHAT_REVIVE_NOTIFICATION_CHANNEL_ID).send("Chat revive has been used! The 24 hour cooldown period before it can be used again has begun.");
-                })
-                .catch(console.error);
-
-            miscData.chat_revive.last_pinged = Date.now();
-            saveData();
-
-            setTimeout(() => {
-                role.setMentionable(true)
+    if (process.env.DEVELOP != '1') {
+        if (mentionedRole) {
+            const guild = client.guilds.cache.get(GUILD_ID);
+            const role = guild.roles.cache.get(CHAT_REVIVE_ROLE_ID);
+            if (role && role.mentionable) {
+                role.setMentionable(false)
                     .then(() => {
-                        console.log('Role is now mentionable');
-                        guild.channels.cache.get(CHAT_REVIVE_NOTIFICATION_CHANNEL_ID).send("Chat revive cooldown has expired. Next chat revive is ready to be used! >:)");
+                        console.log('Role is no longer mentionable');
+                        guild.channels.cache.get(CHAT_REVIVE_NOTIFICATION_CHANNEL_ID).send("Chat revive has been used! The 24 hour cooldown period before it can be used again has begun.");
                     })
                     .catch(console.error);
-            }, COOLDOWN_TIME)
+    
+                miscData.chat_revive.last_pinged = Date.now();
+                saveData();
+    
+                setTimeout(() => {
+                    role.setMentionable(true)
+                        .then(() => {
+                            console.log('Role is now mentionable');
+                            guild.channels.cache.get(CHAT_REVIVE_NOTIFICATION_CHANNEL_ID).send("Chat revive cooldown has expired. Next chat revive is ready to be used! >:)");
+                        })
+                        .catch(console.error);
+                }, COOLDOWN_TIME)
+            }
         }
     }
 
