@@ -24,7 +24,7 @@ module.exports = {
         const balance = await getSnodeCoinBalance(interaction.user);
 
         const target = interaction.options.getUser('user');
-        const amount = interaction.options.getNumber('amount');
+        const amount = Math.floor(interaction.options.getNumber('amount'));
 
         if (balance < amount) {
             return await interaction.reply(`Your balance is **${balance}**, which is not enough to give **${target.username}** **${amount}** snode coins.`);
@@ -33,7 +33,7 @@ module.exports = {
         await decreaseSnodeCoinBalance(interaction.user, amount);
         await increaseSnodeCoinBalance(target, amount);
 
-        await interaction.reply(`You have given **${target.username}** **${amount}** snode coins. Your new snode coin balance is **${balance - amount}**`);
+        await interaction.reply(`You have given **${target.username}** **${amount}** snode coins. Your new snode coin balance is **${await getSnodeCoinBalance(interaction.user)}**`);
     }
 }
 
@@ -46,15 +46,13 @@ async function getSnodeCoinBalance(user) {
 }
 
 async function increaseSnodeCoinBalance(user, amount) {
-    User.findAll({where: {userID: user.id}}).then(res => {
-        res[0].coins += amount;
-        res[0].save();
+    User.findAll({where: {userID: user.id}}).then(async (res) => {
+        await res[0].increment('coins', { by: amount });;
     });
 }
 
 async function decreaseSnodeCoinBalance(user, amount) {
-    User.findAll({where: {userID: user.id}}).then(res => {
-        res[0].coins -= amount;
-        res[0].save();
+    User.findAll({where: {userID: user.id}}).then(async (res) => {
+        await res[0].decrement('coins', { by: amount });;
     });
 }
